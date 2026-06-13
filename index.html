@@ -3,458 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>منصة المكتبة الملكية</title>
-    
+    <title>Royal Library</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-
     <style>
-        /* لوحة الألوان الملكية المعتمدة */
-        :root {
-            --royal-purple: #563777;
-            --royal-gold: #e8a03f;
-            --dark-gray: #1a1a1a;
-            --cream-white: #f2f2f2;
-            --bg-deep: #101010;
-            --glass-bg: rgba(26, 26, 26, 0.85);
-            --gold-glow: rgba(232, 160, 63, 0.15);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Cairo', sans-serif;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
-        }
-
-        body {
-            background: var(--bg-deep);
-            color: var(--cream-white);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* --- الهيدر (الشريط العلوي) --- */
-        header {
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            border-bottom: 2px solid var(--royal-purple);
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 100;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        /* ضع مسار الشعار الخاص بك هنا */
-        .brand img {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            border: 1px solid var(--royal-gold);
-            object-fit: cover;
-        }
-
-        .brand-text {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .brand-text h1 {
-            font-size: 1.1rem;
-            color: var(--cream-white);
-            font-weight: 800;
-            line-height: 1.2;
-        }
-
+        :root { --royal-purple: #563777; --royal-gold: #e8a03f; --dark-bg: #1a1a1a; --deep-bg: #101010; --text-light: #f2f2f2; --glass-panel: rgba(26, 26, 26, 0.85); --glass-border: rgba(232, 160, 63, 0.2); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        body { background: linear-gradient(135deg, var(--deep-bg) 0%, var(--dark-bg) 100%); color: var(--text-light); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        header { background: var(--glass-panel); backdrop-filter: blur(12px); border-bottom: 2px solid var(--royal-purple); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand img { width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--royal-gold); object-fit: cover; }
+        .brand-text h1 { font-size: 1.1rem; font-weight: 800; }
         .brand-text h1 span { color: var(--royal-gold); }
-        .user-badge { font-size: 0.75rem; color: var(--royal-purple); font-weight: 600; }
-
-        /* --- نظام التنقل بين الشاشات --- */
-        .screen {
-            display: none;
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            animation: fadeIn 0.3s ease;
-        }
-
+        .user-badge { font-size: 0.75rem; color: var(--royal-purple); }
+        .screen { display: none; flex: 1; overflow-y: auto; padding: 20px; }
         .screen.active { display: block; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- شاشة الرئيسية (السنوات) --- */
-        .grid-years {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .year-card {
-            background: var(--dark-gray);
-            border: 1px solid var(--royal-purple);
-            border-radius: 16px;
-            padding: 30px 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        }
-
-        .year-card:active { transform: scale(0.95); border-color: var(--royal-gold); }
-        .year-card h2 { font-size: 1.2rem; color: var(--royal-gold); margin-bottom: 5px; }
-        .year-card p { font-size: 0.85rem; color: #888; }
-
-        /* --- شاشة قائمة الملفات --- */
-        .back-btn {
-            background: var(--royal-purple);
-            color: var(--cream-white);
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .file-list { display: flex; flex-direction: column; gap: 12px; }
-
-        .file-item {
-            background: var(--dark-gray);
-            border-right: 4px solid var(--royal-gold);
-            padding: 15px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .file-item:active { background: var(--bg-deep); }
-        .file-title { font-weight: 600; font-size: 1rem; }
-        .file-meta { font-size: 0.8rem; color: #aaa; }
-
-        /* --- شاشة استعراض الـ PDF --- */
-        #viewer-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            padding-bottom: 80px;
-            transition: filter 0.2s, opacity 0.2s;
-        }
-
-        .canvas-wrapper {
-            width: 100%;
-            background: var(--dark-gray);
-            border: 1px solid var(--royal-purple);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-
-        canvas { display: block; width: 100% !important; height: auto !important; }
-
-        .toolbar {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            border: 1px solid var(--royal-purple);
-            padding: 12px 25px;
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-            z-index: 50;
-        }
-
-        .btn-nav {
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--cream-white);
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-
-        .btn-nav:active { background: var(--gold-glow); color: var(--royal-gold); }
-
-        /* منع الطباعة */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px; margin-top: 20px; }
+        .card { background: rgba(86, 55, 119, 0.1); border: 1px solid var(--glass-border); border-radius: 16px; padding: 25px 15px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .card:hover { transform: translateY(-5px); border-color: var(--royal-gold); }
+        .btn-action { background: var(--royal-purple); color: var(--text-light); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; margin-bottom: 20px; }
+        #viewer-container { position: relative; width: 100%; height: calc(100vh - 160px); background: #050505; border-radius: 12px; border: 1px solid var(--glass-border); display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        canvas { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .watermark { position: absolute; pointer-events: none; opacity: 0.15; z-index: 10; width: 100%; height: 100%; }
+        .toolbar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--glass-panel); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 40px; padding: 12px 25px; display: flex; align-items: center; gap: 25px; z-index: 50; }
+        .btn-nav { background: none; border: none; color: var(--text-light); font-weight: 700; cursor: pointer; }
         @media print { body { display: none !important; } }
     </style>
 </head>
 <body>
-
     <header>
         <div class="brand">
-            <img src="logo.png" alt="Logo" onerror="this.src='https://via.placeholder.com/40/563777/e8a03f?text=RL'">
+            <img src="logo.svg" alt="Logo">
             <div class="brand-text">
-                <h1>المكتبة <span>الملكية</span></h1>
-                <div class="user-badge" id="user-info">جاري التحقق...</div>
+                <h1>Royal <span>Library</span></h1>
+                <div class="user-badge" id="user-info"></div>
             </div>
         </div>
     </header>
 
     <main id="screen-home" class="screen active">
-        <h3 style="margin-bottom: 10px; color: var(--royal-gold);">المراحل الدراسية</h3>
-        <p style="font-size: 0.9rem; color: #aaa;">اختر السنة الدراسية لتصفح المقررات المحمية.</p>
-        
-        <div class="grid-years">
-            <div class="year-card" onclick="openYear('year1')">
-                <h2>السنة الأولى</h2>
-                <p>المقررات التأسيسية</p>
-            </div>
-            <div class="year-card" onclick="openYear('year2')">
-                <h2>السنة الثانية</h2>
-                <p>العلوم الأساسية</p>
-            </div>
-            <div class="year-card" onclick="openYear('year3')">
-                <h2>السنة الثالثة</h2>
-                <p>المرحلة السريرية 1</p>
-            </div>
-            <div class="year-card" onclick="openYear('year4')">
-                <h2>السنة الرابعة</h2>
-                <p>المرحلة السريرية 2</p>
-            </div>
+        <div class="grid-container">
+            <div class="card" onclick="openYear('year1')"><h2>Year 1</h2></div>
+            <div class="card" onclick="openYear('year2')"><h2>Year 2</h2></div>
+            <div class="card" onclick="openYear('year3')"><h2>Year 3</h2></div>
+            <div class="card" onclick="openYear('year4')"><h2>Year 4</h2></div>
         </div>
     </main>
 
     <main id="screen-list" class="screen">
-        <button class="back-btn" onclick="goHome()">&larr; رجوع للرئيسية</button>
-        <h3 id="current-year-title" style="margin-bottom: 15px; color: var(--royal-gold);"></h3>
-        <div class="file-list" id="files-container"></div>
+        <button class="btn-action" onclick="goHome()">Back</button>
+        <div id="files-grid" class="grid-container"></div>
     </main>
 
-    <main id="screen-viewer" class="screen" style="padding: 10px;">
-        <button class="back-btn" onclick="closeViewer()">&larr; إغلاق المستند</button>
-        <div id="viewer-container"></div>
+    <main id="screen-viewer" class="screen">
+        <button class="btn-action" onclick="closeViewer()">Close</button>
+        <div id="viewer-container">
+            <canvas id="main-canvas"></canvas>
+            <div class="watermark" id="watermark-layer"></div>
+        </div>
     </main>
 
     <div class="toolbar" id="pdf-toolbar" style="display: none;">
-        <button class="btn-nav" id="prev-btn">السابق</button>
-        <div style="font-weight: 700; color: var(--royal-gold);"><span id="page-num">0</span> / <span id="page-count">0</span></div>
-        <button class="btn-nav" id="next-btn">التالي</button>
+        <button class="btn-nav" id="prev-btn">Prev</button>
+        <div style="font-weight: 800; color: var(--royal-gold);"><span id="page-num">0</span> / <span id="page-count">0</span></div>
+        <button class="btn-nav" id="next-btn">Next</button>
     </div>
 
     <script>
-        // ==========================================
-        // 1. إعدادات تليجرام واستخراج الهوية
-        // ==========================================
-        let tgUser = { id: 'GUEST', name: 'زائر' };
+        let tgUser = { id: 'GUEST', name: 'User' };
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             window.Telegram.WebApp.expand();
             const initData = window.Telegram.WebApp.initDataUnsafe;
             if (initData && initData.user) {
                 tgUser.id = initData.user.id;
-                tgUser.name = initData.user.first_name + (initData.user.username ? ` (@${initData.user.username})` : '');
+                tgUser.name = initData.user.username || initData.user.first_name;
             }
         }
         document.getElementById('user-info').innerText = tgUser.name;
 
-        // ==========================================
-        // 2. قاعدة بيانات الملفات (المنصة)
-        // ==========================================
-        // قم بتغيير أسماء الملفات وكلمات المرور هنا
         const database = {
-            year1: {
-                title: "مقررات السنة الأولى",
-                files: [
-                    { id: 'f1', title: "مبادئ المحاسبة", url: "mohasabeh - Royal Library.pdf", pwdRaw: "ba.yann-26#roy", size: "2.4 MB" },
-                    { id: 'f2', title: "التشريح العام", url: "anatomy.pdf", pwdRaw: "pass123", size: "5.1 MB" }
-                ]
-            },
-            year2: { title: "مقررات السنة الثانية", files: [] },
-            year3: { title: "مقررات السنة الثالثة", files: [] },
-            year4: { title: "مقررات السنة الرابعة", files: [] }
+            year1: { files: [{ title: "Accounting", url: "mohasabeh - Royal Library.pdf", pwdCodes: [98, 97, 46, 121, 97, 110, 110, 45, 50, 54, 35, 114, 111, 121] }] },
+            year2: { files: [] }, year3: { files: [] }, year4: { files: [] }
         };
 
-        // ==========================================
-        // 3. نظام التنقل
-        // ==========================================
-        function hideAllScreens() {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('pdf-toolbar').style.display = 'none';
+        function hideAll() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('pdf-toolbar').style.display = 'none'; }
+        function goHome() { hideAll(); document.getElementById('screen-home').classList.add('active'); }
+        function openYear(y) {
+            document.getElementById('files-grid').innerHTML = database[y].files.map(f => `<div class="card" onclick="initViewer('${f.url}', [${f.pwdCodes}])"><h3>${f.title}</h3></div>`).join('');
+            hideAll(); document.getElementById('screen-list').classList.add('active');
         }
+        function closeViewer() { hideAll(); document.getElementById('screen-list').classList.add('active'); }
 
-        function goHome() {
-            hideAllScreens();
-            document.getElementById('screen-home').classList.add('active');
-        }
-
-        function openYear(yearKey) {
-            const data = database[yearKey];
-            document.getElementById('current-year-title').innerText = data.title;
-            const container = document.getElementById('files-container');
-            container.innerHTML = '';
-
-            if(data.files.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">لا توجد ملفات حالياً في هذا القسم.</p>';
-            } else {
-                data.files.forEach(file => {
-                    const el = document.createElement('div');
-                    el.className = 'file-item';
-                    el.innerHTML = `<div><div class="file-title">${file.title}</div><div class="file-meta">الحجم: ${file.size}</div></div> <div>&#128196;</div>`;
-                    // عند النقر، نقوم بتشفير الباسوورد ديناميكياً قبل الإرسال للمستعرض
-                    el.onclick = () => initViewer(file.url, window.btoa(file.pwdRaw));
-                    container.appendChild(el);
-                });
-            }
-            hideAllScreens();
-            document.getElementById('screen-list').classList.add('active');
-        }
-
-        function closeViewer() {
-            document.getElementById('viewer-container').innerHTML = '';
-            hideAllScreens();
-            document.getElementById('screen-list').classList.add('active');
-        }
-
-        // ==========================================
-        // 4. محرك الـ PDF (عالي الدقة + لغة عربية)
-        // ==========================================
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-        
-        let pdfDoc = null, pageNum = 1, isRendering = false, pageQueue = null;
+        let pdfDoc = null, pageNum = 1;
 
-        function initViewer(fileUrl, base64Pwd) {
-            hideAllScreens();
+        function initViewer(url, pwdCodes) {
+            hideAll();
             document.getElementById('screen-viewer').classList.add('active');
-            const container = document.getElementById('viewer-container');
-            container.innerHTML = '<p style="color: var(--royal-gold);">جاري فك التشفير والتحميل...</p>';
-            
-            const pwd = window.atob(base64Pwd);
-
-            pdfjsLib.getDocument({
-                url: fileUrl,
-                password: pwd,
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/cmaps/',
-                cMapPacked: true // ضروري جداً لعدم تقطع الحروف العربية
-            }).promise.then(doc => {
-                pdfDoc = doc;
-                pageNum = 1;
-                document.getElementById('page-count').innerText = doc.numPages;
+            const pwd = String.fromCharCode(...pwdCodes);
+            pdfjsLib.getDocument({ url: url, password: pwd, cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/cmaps/', cMapPacked: true }).promise.then(doc => {
+                pdfDoc = doc; document.getElementById('page-count').innerText = doc.numPages;
                 document.getElementById('pdf-toolbar').style.display = 'flex';
-                container.innerHTML = '<div class="canvas-wrapper"><canvas id="main-canvas"></canvas></div>';
-                renderPage(pageNum);
-            }).catch(err => {
-                container.innerHTML = '<p style="color: #ff4d4d;">خطأ: الملف غير موجود أو التشفير غير متطابق.</p>';
+                renderPage(1);
             });
         }
 
         function renderPage(num) {
-            isRendering = true;
             pdfDoc.getPage(num).then(page => {
                 const canvas = document.getElementById('main-canvas');
                 const ctx = canvas.getContext('2d');
-                
-                // هندسة الدقة العالية (مهم جداً لجودة الخطوط العربية)
-                const viewport = page.getViewport({ scale: 1.5 });
-                const outputScale = window.devicePixelRatio || 1;
-                
-                canvas.width = Math.floor(viewport.width * outputScale);
-                canvas.height = Math.floor(viewport.height * outputScale);
-                canvas.style.width = Math.floor(viewport.width) + "px";
-                canvas.style.height = Math.floor(viewport.height) + "px";
-
-                const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
-                const renderContext = { canvasContext: ctx, transform: transform, viewport: viewport };
-
-                page.render(renderContext).promise.then(() => {
-                    isRendering = false;
-                    drawTelegramWatermark(ctx, canvas.width, canvas.height, outputScale);
-                    if (pageQueue !== null) { renderPage(pageQueue); pageQueue = null; }
+                const viewport = page.getViewport({ scale: 2.0 });
+                canvas.height = viewport.height; canvas.width = viewport.width;
+                page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
+                    const idText = `ID: ${tgUser.id} | ${tgUser.name}`;
+                    ctx.save(); ctx.font = "bold 30px Cairo"; ctx.fillStyle = "rgba(232, 160, 63, 0.15)";
+                    for(let x=0; x<canvas.width; x+=300) for(let y=0; y<canvas.height; y+=200) { ctx.fillText(idText, x, y); }
+                    ctx.restore();
                 });
             });
             document.getElementById('page-num').innerText = num;
         }
 
-        // ==========================================
-        // 5. هندسة العلامة المائية (الرعب النفسي)
-        // ==========================================
-        function drawTelegramWatermark(ctx, width, height, scale) {
-            ctx.save();
-            // تصغير الخط قليلاً حتى يتكرر كثيراً ويغطي الشاشة
-            ctx.font = `bold ${20 * scale}px Cairo`;
-            ctx.fillStyle = "rgba(232, 160, 63, 0.18)"; // ذهبي واضح للرؤية ويصعب إزالته
-            ctx.textAlign = "center";
-            
-            const watermarkText = `ID: ${tgUser.id} | ${tgUser.name}`;
-            
-            // تكرار النص كشبكة فوق كامل الصفحة
-            for (let x = 50 * scale; x < width; x += 300 * scale) {
-                for (let y = 50 * scale; y < height; y += 200 * scale) {
-                    ctx.save();
-                    ctx.translate(x, y);
-                    ctx.rotate(-Math.PI / 4);
-                    ctx.fillText(watermarkText, 0, 0);
-                    ctx.restore();
-                }
-            }
-            ctx.restore();
-        }
+        document.getElementById('prev-btn').onclick = () => { if (pageNum > 1) renderPage(--pageNum); };
+        document.getElementById('next-btn').onclick = () => { if (pageNum < pdfDoc.numPages) renderPage(++pageNum); };
 
-        // ==========================================
-        // 6. أزرار التحكم
-        // ==========================================
-        document.getElementById('prev-btn').onclick = () => {
-            if (pageNum <= 1) return;
-            pageNum--;
-            if (isRendering) pageQueue = pageNum; else renderPage(pageNum);
-        };
-
-        document.getElementById('next-btn').onclick = () => {
-            if (pageNum >= pdfDoc.numPages) return;
-            pageNum++;
-            if (isRendering) pageQueue = pageNum; else renderPage(pageNum);
-        };
-
-        // ==========================================
-        // 7. الأمن السيبراني (منع لقطات الشاشة)
-        // ==========================================
-        const viewerContainer = document.getElementById('viewer-container');
         document.addEventListener('contextmenu', e => e.preventDefault());
-        
-        // تعمية المستند فوراً عند محاولة التقاط الشاشة
-        window.addEventListener('blur', () => { 
-            viewerContainer.style.filter = 'blur(50px)'; 
-            viewerContainer.style.opacity = '0'; 
-        });
-        window.addEventListener('focus', () => { 
-            viewerContainer.style.filter = 'none'; 
-            viewerContainer.style.opacity = '1'; 
-        });
-
-        // تجميد أدوات المطورين
-        setInterval(() => {
-            const start = performance.now();
-            debugger;
-            if (performance.now() - start > 100) document.body.innerHTML = '';
-        }, 1000);
+        document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's' || e.key === 'i')) e.preventDefault(); });
+        window.addEventListener('blur', () => { document.getElementById('viewer-container').style.filter = 'blur(60px)'; });
+        window.addEventListener('focus', () => { document.getElementById('viewer-container').style.filter = 'none'; });
+        setInterval(() => { debugger; }, 1000);
     </script>
 </body>
 </html>
