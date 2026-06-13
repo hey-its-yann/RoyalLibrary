@@ -2,24 +2,25 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المكتبة الملكية | استعراض آمن</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Royal Library</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 
     <style>
-        /* الألوان الملكية: أسود، ذهبي، رمادي داكن، أبيض كريمي */
         :root {
             --bg-dark: #1a1a1a;
             --bg-deep: #101010;
             --royal-gold: #e8a03f;
             --royal-gold-dim: rgba(232, 160, 63, 0.15);
             --cream-white: #f2f2f2;
-            --panel-bg: rgba(26, 26, 26, 0.85);
+            --panel-bg: rgba(26, 26, 26, 0.95);
+            --tg-height: var(--tg-viewport-height, 100vh);
         }
 
         * {
@@ -29,212 +30,330 @@
             font-family: 'Cairo', sans-serif;
             -webkit-user-select: none;
             user-select: none;
+            -webkit-touch-callout: none;
         }
 
         body {
-            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-deep) 100%);
+            background: var(--bg-deep);
             color: var(--cream-white);
-            min-height: 100vh;
+            height: var(--tg-height);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            overscroll-behavior: none;
         }
 
         header {
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--royal-gold-dim);
-            padding: 15px 30px;
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 10;
+            z-index: 20;
+            flex-shrink: 0;
         }
 
         .brand-title {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: 700;
-            color: var(--cream-white);
-            letter-spacing: 0.5px;
         }
 
         .brand-title span {
             color: var(--royal-gold);
         }
 
-        main {
+        #scroll-container {
             flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px 10px 80px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            transition: filter 0.2s, opacity 0.2s;
+        }
+
+        .page-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            background: #0a0a0a;
+            border: 1px solid var(--royal-gold-dim);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            min-height: 400px;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-            overflow-y: auto;
         }
 
-        .canvas-wrapper {
-            position: relative;
-            background: #0a0a0a;
-            border: 1px solid var(--royal-gold-dim);
-            border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
-            transition: filter 0.1s, opacity 0.1s;
-        }
-
-        canvas {
+        .page-wrapper canvas {
             display: block;
-            max-width: 100%;
+            width: 100%;
             height: auto;
-            border-radius: 12px;
+            border-radius: 8px;
         }
 
         .toolbar {
             position: fixed;
-            bottom: 30px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             background: var(--panel-bg);
             backdrop-filter: blur(15px);
             border: 1px solid var(--royal-gold-dim);
-            padding: 12px 25px;
-            border-radius: 40px;
+            padding: 10px 20px;
+            border-radius: 30px;
             display: flex;
             align-items: center;
             gap: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-            z-index: 10;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            z-index: 20;
         }
 
         .btn-nav {
             background: transparent;
             border: 1px solid transparent;
             color: var(--cream-white);
-            padding: 8px 18px;
+            padding: 6px 16px;
             border-radius: 20px;
             cursor: pointer;
             font-weight: 600;
-            transition: all 0.3s;
+            font-size: 0.9rem;
         }
 
-        .btn-nav:hover:not(:disabled) {
+        .btn-nav:hover {
             background: var(--royal-gold-dim);
-            border-color: var(--royal-gold);
             color: var(--royal-gold);
         }
 
-        .btn-nav:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
+        #thumbnails-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--tg-height);
+            background: var(--bg-deep);
+            z-index: 30;
+            display: none;
+            flex-direction: column;
         }
 
-        /* حظر الطباعة كلياً */
-        @media print {
-            body { display: none !important; }
+        .modal-header {
+            padding: 15px 20px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--royal-gold-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--royal-gold);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        #thumbnails-grid {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            align-content: flex-start;
+        }
+
+        .thumb-wrapper {
+            border: 1px solid var(--royal-gold-dim);
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .thumb-wrapper canvas {
+            width: 100%;
+            display: block;
+        }
+
+        .thumb-label {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.7);
+            text-align: center;
+            font-size: 0.8rem;
+            padding: 4px 0;
+        }
+
+        @media print { body { display: none !important; } }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="brand-title">المكتبة <span>الملكية</span></div>
-        <div style="font-size: 0.85rem; color: var(--royal-gold);">نظام التشفير والحماية النشط (DRM)</div>
+        <div class="brand-title">Royal <span>Library</span></div>
     </header>
 
-    <main>
-        <div class="canvas-wrapper" id="canvasWrapper">
-            <canvas id="pdf-canvas"></canvas>
-        </div>
-    </main>
+    <div id="scroll-container"></div>
 
     <div class="toolbar">
-        <button class="btn-nav" id="prev-btn" disabled>السابق</button>
-        <div style="font-weight: 600;"><span id="page-num">0</span> / <span id="page-count">0</span></div>
-        <button class="btn-nav" id="next-btn" disabled>التالي</button>
+        <button class="btn-nav" id="grid-btn">تصفح الصفحات</button>
+    </div>
+
+    <div id="thumbnails-modal">
+        <div class="modal-header">
+            <div class="brand-title">المصغرات</div>
+            <button class="close-btn" id="close-modal">&times;</button>
+        </div>
+        <div id="thumbnails-grid"></div>
     </div>
 
     <script>
-        /* ==========================================
-           1. هندسة فك التشفير الصامت
-           يتم تجميع كلمة المرور برمجياً لمنع سرقتها
-        ========================================== */
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+        }
+
         const _0xDoc = 'mohasabeh - Royal Library.pdf';
-        
-        // كلمة المرور ba.yann-26#roy مقسمة ومشفرة بصيغة Base64
-        const _p1 = window.atob('YmEueWFubg=='); // ba.yann
-        const _p2 = window.atob('LTI2I3JveQ=='); // -26#roy
+        const _p1 = window.atob('YmEueWFubg==');
+        const _p2 = window.atob('LTI2I3JveQ==');
         const _0xKey = _p1 + _p2; 
 
-        let pdfDoc = null, pageNum = 1, pageRendering = false, pageNumPending = null,
-            canvas = document.getElementById('pdf-canvas'), ctx = canvas.getContext('2d'),
-            wrapper = document.getElementById('canvasWrapper');
+        let pdfDoc = null;
+        const scrollContainer = document.getElementById('scroll-container');
+        const thumbGrid = document.getElementById('thumbnails-grid');
+        const modal = document.getElementById('thumbnails-modal');
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-        /* ==========================================
-           2. معالجة ورسم المستند
-        ========================================== */
-        function renderPage(num) {
-            pageRendering = true;
-            pdfDoc.getPage(num).then(function(page) {
-                const viewport = page.getViewport({scale: 1.5});
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-
-                const renderTask = page.render({canvasContext: ctx, viewport: viewport});
-                renderTask.promise.then(function() {
-                    pageRendering = false;
-                    applyWatermark();
-                    if (pageNumPending !== null) { renderPage(pageNumPending); pageNumPending = null; }
-                });
+        const renderObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const canvas = entry.target.querySelector('canvas');
+                    if (canvas && !canvas.rendered) {
+                        renderCanvas(canvas, parseInt(canvas.dataset.page), 1.5, true);
+                        canvas.rendered = true;
+                    }
+                }
             });
-            document.getElementById('page-num').textContent = num;
-        }
+        }, { rootMargin: '500px' });
 
-        // بصمة الهوية البصرية فوق المستند (تمنع الاستفادة من لقطات الشاشة)
-        function applyWatermark() {
+        const thumbObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const canvas = entry.target.querySelector('canvas');
+                    if (canvas && !canvas.rendered) {
+                        renderCanvas(canvas, parseInt(canvas.dataset.page), 0.3, false);
+                        canvas.rendered = true;
+                    }
+                }
+            });
+        }, { rootMargin: '300px' });
+
+        function applyWatermark(ctx, width, height) {
             ctx.save();
             ctx.font = "bold 24px Cairo";
-            ctx.fillStyle = "rgba(232, 160, 63, 0.12)"; // ذهبي شفاف جداً
+            ctx.fillStyle = "rgba(232, 160, 63, 0.12)";
             ctx.textAlign = "center";
-            for (let x = 100; x < canvas.width; x += 350) {
-                for (let y = 100; y < canvas.height; y += 250) {
-                    ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI / 5);
-                    ctx.fillText("المكتبة الملكية - Royal Library", 0, 0); 
-                    ctx.font = "16px Cairo";
-                    ctx.fillText("نسخة مشفرة للعرض فقط", 0, 30);
+            for (let x = 100; x < width; x += 350) {
+                for (let y = 100; y < height; y += 250) {
+                    ctx.save(); 
+                    ctx.translate(x, y); 
+                    ctx.rotate(-Math.PI / 5);
+                    ctx.fillText("Royal Library", 0, 0); 
                     ctx.restore();
                 }
             }
             ctx.restore();
         }
 
-        function queueRenderPage(num) { if (pageRendering) { pageNumPending = num; } else { renderPage(num); } }
-        document.getElementById('prev-btn').addEventListener('click', () => { if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum); });
-        document.getElementById('next-btn').addEventListener('click', () => { if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum); });
+        function renderCanvas(canvas, pageNum, scale, withWatermark) {
+            pdfDoc.getPage(pageNum).then(page => {
+                const viewport = page.getViewport({ scale: scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                const ctx = canvas.getContext('2d');
 
-        // التحميل الصامت للملف وتمرير مفتاح التشفير
-        pdfjsLib.getDocument({ url: _0xDoc, password: _0xKey }).promise.then(function(pdfDoc_) {
+                page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
+                    if (withWatermark) applyWatermark(ctx, canvas.width, canvas.height);
+                });
+            });
+        }
+
+        function initPages(numPages) {
+            for (let i = 1; i <= numPages; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'page-wrapper';
+                wrapper.id = `page-wrap-${i}`;
+                
+                const canvas = document.createElement('canvas');
+                canvas.dataset.page = i;
+                wrapper.appendChild(canvas);
+                
+                scrollContainer.appendChild(wrapper);
+                renderObserver.observe(wrapper);
+
+                const thumbWrap = document.createElement('div');
+                thumbWrap.className = 'thumb-wrapper';
+                thumbWrap.onclick = () => {
+                    modal.style.display = 'none';
+                    wrapper.scrollIntoView({ behavior: 'smooth' });
+                };
+
+                const thumbCanvas = document.createElement('canvas');
+                thumbCanvas.dataset.page = i;
+                
+                const label = document.createElement('div');
+                label.className = 'thumb-label';
+                label.innerText = i;
+
+                thumbWrap.appendChild(thumbCanvas);
+                thumbWrap.appendChild(label);
+                thumbGrid.appendChild(thumbWrap);
+                thumbObserver.observe(thumbWrap);
+            }
+        }
+
+        pdfjsLib.getDocument({
+            url: _0xDoc,
+            password: _0xKey,
+            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/cmaps/',
+            cMapPacked: true
+        }).promise.then(function(pdfDoc_) {
             pdfDoc = pdfDoc_;
-            document.getElementById('page-count').textContent = pdfDoc.numPages;
-            document.getElementById('prev-btn').disabled = false;
-            document.getElementById('next-btn').disabled = false;
-            renderPage(pageNum);
+            initPages(pdfDoc.numPages);
         }).catch(err => {
-            console.error("Access Denied.");
-            wrapper.innerHTML = "<h3 style='color:red; text-align:center; padding:50px;'>عذراً، المستند مشفر أو غير موجود.</h3>";
+            scrollContainer.innerHTML = "<h3 style='color:red; margin-top:50px;'>عذراً، المستند غير متوفر.</h3>";
         });
 
-        /* ==========================================
-           3. ترسانة الحماية والأمن السيبراني
-        ========================================== */
-        
-        // أ. حظر النقر الأيمن
+        document.getElementById('grid-btn').addEventListener('click', () => {
+            modal.style.display = 'flex';
+        });
+
+        document.getElementById('close-modal').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
         document.addEventListener('contextmenu', e => e.preventDefault());
         
-        // ب. تعمية الشاشة عند تشغيل أداة القص أو التبديل بين التطبيقات
-        window.addEventListener('blur', () => { wrapper.style.filter = 'blur(60px)'; wrapper.style.opacity = '0'; });
-        window.addEventListener('focus', () => { wrapper.style.filter = 'none'; wrapper.style.opacity = '1'; });
+        window.addEventListener('blur', () => { 
+            scrollContainer.style.filter = 'blur(60px)'; 
+            scrollContainer.style.opacity = '0'; 
+        });
         
-        // ج. حظر اختصارات لوحة المفاتيح (الطباعة، الحفظ، فحص العنصر)
+        window.addEventListener('focus', () => { 
+            scrollContainer.style.filter = 'none'; 
+            scrollContainer.style.opacity = '1'; 
+        });
+
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'i')) {
                 e.preventDefault();
@@ -242,13 +361,12 @@
             if (e.key === 'PrintScreen') navigator.clipboard.writeText('');
         });
 
-        // د. فخ أدوات المطورين (تجميد المتصفح إذا حاول أحدهم فتح الكود)
         setInterval(function() {
             const before = new Date().getTime();
             debugger; 
             const after = new Date().getTime();
             if (after - before > 100) {
-                document.body.innerHTML = ""; // تدمير الصفحة إذا تم اكتشاف فحص
+                document.body.innerHTML = "";
             }
         }, 1000);
 
